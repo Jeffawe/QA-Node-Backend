@@ -2,7 +2,6 @@
 import express from 'express';
 import { supabase } from '../config/database.js';
 import { GeminiService } from '../services/geminiService.js';
-import express from 'express';
 import multer from 'multer';
 import fs from 'fs';
 import dotenv from 'dotenv';
@@ -110,18 +109,17 @@ router.post('/user/:userKey/gemini-call', upload.single('image'), async (req, re
                 console.error('Error processing image:', error);
                 return res.status(415).json({ error: 'Failed to upload image to Gemini' });
             } finally {
-                // Clean up temp file
-                fs.unlinkSync(imageFile.path);
+                // Clean up temp file safely
+                if (imageFile?.path) {
+                    try {
+                        fs.unlinkSync(imageFile.path);
+                    } catch (cleanupError) {
+                        console.error('Error cleaning up file:', cleanupError);
+                    }
+                }
             }
         } else {
-            console.error('Error processing image:', error);
             return res.status(415).json({ error: 'Failed to upload image to Gemini' });
-            // Text-only processing
-            // result = await geminiService.generateContent(
-            //     prompt,
-            //     model,
-            //     systemInstruction
-            // );
         }
 
         // Update call count (your existing code)
