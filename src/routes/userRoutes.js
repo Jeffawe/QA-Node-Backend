@@ -53,6 +53,48 @@ router.get('/user/:userKey', async (req, res) => {
     }
 });
 
+router.post('/user/check-key', async (req, res) => {
+    try {
+        const { userKey, returnApiKey = false } = req.body;
+
+        if (!userKey) {
+            return res.status(400).json({ error: 'User key is required' });
+        }
+
+        if (!userKey.startsWith('TEST')) {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+
+        // Fetch user from Supabase
+        const { data: user, error } = await supabase
+            .from('test_users')
+            .select('user_key, gemini_api_key')
+            .eq('user_key', userKey)
+            .single();
+
+        if (error || !user) {
+            return res.json({
+                exists: false,
+                ...(returnApiKey && { apiKey: null })
+            });
+        }
+
+        // Return response based on returnApiKey boolean
+        if (returnApiKey) {
+            res.json({
+                exists: true,
+                apiKey: user.gemini_api_key || null
+            });
+        } else {
+            res.json({ exists: true });
+        }
+
+    } catch (error) {
+        console.error('Error checking user key:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 router.post('/user/:userKey/gemini-call', upload.single('image'), async (req, res) => {
     try {
         const { userKey } = req.params;
