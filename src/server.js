@@ -21,7 +21,7 @@ const limiter = rateLimit({
 });
 
 // Routes
-app.use('/api', limiter, userRoutes);
+app.use('/api', userRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

@@ -79,6 +79,8 @@ router.post('/user/check-key', async (req, res) => {
             });
         }
 
+        console.log('User found:', user);
+
         // Return response based on returnApiKey boolean
         if (returnApiKey) {
             res.json({
