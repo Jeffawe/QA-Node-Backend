@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import userRoutes from './routes/userRoutes.js';
+import cors from 'cors';
 
 dotenv.config();
 
@@ -10,6 +11,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
+app.use(cors()); 
 
 // Rate limiting
 const limiter = rateLimit({
