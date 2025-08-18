@@ -65,12 +65,24 @@ router.post('/user/check-key', async (req, res) => {
             return res.status(403).json({ error: 'Unauthorized' });
         }
 
+        console.log('Searching for user key:', userKey); // Debug log
+
         // Fetch user from Supabase
         const { data: user, error } = await supabase
             .from('test_users')
             .select('user_key, gemini_api_key')
             .eq('user_key', userKey)
             .single();
+
+        // Add detailed error logging
+        if (error) {
+            console.log('Supabase error details:', error);
+            console.log('Error code:', error.code);
+            console.log('Error message:', error.message);
+        }
+
+        console.log('Query result - data:', user);
+        console.log('Query result - error:', error);
 
         if (error || !user) {
             console.log('User not found:', userKey);
