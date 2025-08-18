@@ -13,15 +13,15 @@ app.use(express.json());
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+  windowMs: 15 * 60 * 1000,
+  max: 10000,
   message: { error: 'Too many requests from this IP' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 // Routes
-app.use('/api', userRoutes);
+app.use('/api', limiter, userRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
