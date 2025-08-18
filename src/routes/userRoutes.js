@@ -73,6 +73,7 @@ router.post('/user/check-key', async (req, res) => {
             .single();
 
         if (error || !user) {
+            console.log('User not found:', userKey);
             return res.json({
                 exists: false,
                 ...(returnApiKey && { apiKey: null })
