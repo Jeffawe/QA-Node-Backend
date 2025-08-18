@@ -20,10 +20,8 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use(limiter);
-
 // Routes
-app.use('/api', userRoutes);
+app.use('/api', limiter, userRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
