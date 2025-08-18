@@ -65,27 +65,43 @@ router.post('/user/check-key', async (req, res) => {
             return res.status(403).json({ error: 'Unauthorized' });
         }
 
-        console.log('Searching for user key:', userKey); // Debug log
+        console.log('Searching for user key:', userKey);
+        console.log('User key length:', userKey.length);
+        console.log('User key bytes:', Buffer.from(userKey, 'utf8'));
 
-        // Fetch user from Supabase
+        // First, let's get ALL users to see what's actually in the database
+        const { data: allUsers, error: allError } = await supabase
+            .from('test_users')
+            .select('user_key, gemini_api_key');
+
+        console.log('All users in database:', allUsers);
+        console.log('All users error:', allError);
+
+        // Check if our target key exists in the results
+        if (allUsers) {
+            const foundUser = allUsers.find(u => u.user_key === userKey);
+            console.log('Found user by manual search:', foundUser);
+            
+            // Check each user key character by character
+            allUsers.forEach(user => {
+                console.log(`Comparing "${user.user_key}" (length: ${user.user_key?.length}) with "${userKey}" (length: ${userKey.length})`);
+                console.log('Are they equal?', user.user_key === userKey);
+                if (user.user_key !== userKey) {
+                    console.log('User key bytes:', Buffer.from(user.user_key || '', 'utf8'));
+                    console.log('Search key bytes:', Buffer.from(userKey, 'utf8'));
+                }
+            });
+        }
+
+        // Now try the original query
         const { data: user, error } = await supabase
             .from('test_users')
             .select('user_key, gemini_api_key')
             .eq('user_key', userKey)
             .single();
 
-        // Add detailed error logging
-        if (error) {
-            console.log('Supabase error details:', error);
-            console.log('Error code:', error.code);
-            console.log('Error message:', error.message);
-        }
-
-        console.log('Query result - data:', user);
-        console.log('Query result - error:', error);
-
         if (error || !user) {
-            console.log('User not found:', userKey);
+            console.log('User not found with single query:', userKey);
             return res.json({
                 exists: false,
                 ...(returnApiKey && { apiKey: null })
@@ -94,7 +110,6 @@ router.post('/user/check-key', async (req, res) => {
 
         console.log('User found:', user);
 
-        // Return response based on returnApiKey boolean
         if (returnApiKey) {
             res.json({
                 exists: true,
@@ -109,6 +124,63 @@ router.post('/user/check-key', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+// router.post('/user/check-key', async (req, res) => {
+//     try {
+//         const { userKey, returnApiKey = false } = req.body;
+
+//         if (!userKey) {
+//             return res.status(400).json({ error: 'User key is required' });
+//         }
+
+//         if (!userKey.startsWith('TEST')) {
+//             return res.status(403).json({ error: 'Unauthorized' });
+//         }
+
+//         console.log('Searching for user key:', userKey); // Debug log
+
+//         // Fetch user from Supabase
+//         const { data: user, error } = await supabase
+//             .from('test_users')
+//             .select('user_key, gemini_api_key')
+//             .eq('user_key', userKey)
+//             .single();
+
+//         // Add detailed error logging
+//         if (error) {
+//             console.log('Supabase error details:', error);
+//             console.log('Error code:', error.code);
+//             console.log('Error message:', error.message);
+//         }
+
+//         console.log('Query result - data:', user);
+//         console.log('Query result - error:', error);
+
+//         if (error || !user) {
+//             console.log('User not found:', userKey);
+//             return res.json({
+//                 exists: false,
+//                 ...(returnApiKey && { apiKey: null })
+//             });
+//         }
+
+//         console.log('User found:', user);
+
+//         // Return response based on returnApiKey boolean
+//         if (returnApiKey) {
+//             res.json({
+//                 exists: true,
+//                 apiKey: user.gemini_api_key || null
+//             });
+//         } else {
+//             res.json({ exists: true });
+//         }
+
+//     } catch (error) {
+//         console.error('Error checking user key:', error);
+//         res.status(500).json({ error: 'Internal server error' });
+//     }
+// });
 
 router.post('/user/:userKey/gemini-call', upload.single('image'), async (req, res) => {
     try {
