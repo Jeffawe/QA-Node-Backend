@@ -14,7 +14,7 @@ app.use(cors()); // Keep CORS but rely on API key for security
 
 const validateClientDomain = (req, res, next) => {
     const allowedDomains = process.env.NODE_ENV === 'production'
-        ? ['https://qa-agent-6x82.onrender.com']
+        ? ['qa-client']
         : true;
 
     const clientDomain = req.get('X-Client-Domain');
@@ -57,7 +57,6 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log('📋 API Key authentication enabled');
 });
 
 export default app;
