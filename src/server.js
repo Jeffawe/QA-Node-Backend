@@ -12,30 +12,28 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cors()); // Keep CORS but rely on API key for security
 
-// Optional: Additional referer checking for extra security
-const validateReferer = (req, res, next) => {
-  const allowedDomain = process.env.ALLOWED_DOMAIN;
-  
-  // Skip referer check if no domain is configured
-  if (!allowedDomain) {
-    return next();
-  }
-  
-  const referer = req.get('Referer') || req.get('Origin');
-  
-  if (!referer || !referer.startsWith(allowedDomain)) {
-    console.log('Access denied:', referer);
-    return res.status(403).json({ 
-      error: 'Access denied',
-      message: 'Requests must come from authorized domain'
-    });
-  }
-  
-  next();
+const validateClientDomain = (req, res, next) => {
+    const allowedDomains = process.env.NODE_ENV === 'production'
+        ? ['https://qa-agent-6x82.onrender.com']
+        : true;
+
+    const clientDomain = req.get('X-Client-Domain');
+    
+    if (allowedDomains === true) {
+        return next(); // Development - allow all
+    }
+    
+    if (!clientDomain || !allowedDomains.includes(clientDomain)) {
+        console.log('❌ Access blocked - invalid client domain:', clientDomain);
+        return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    console.log('✅ Access granted to:', clientDomain);
+    next();
 };
 
 // Routes with authentication
-app.use('/api', validateReferer, userRoutes);
+app.use('/api', validateClientDomain, userRoutes);
 
 // Health check (no auth required)
 app.get('/health', (req, res) => {
