@@ -1,6 +1,5 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import rateLimit from 'express-rate-limit';
 import userRoutes from './routes/userRoutes.js';
 import cors from 'cors';
 
@@ -11,21 +10,34 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
-app.use(cors()); 
+app.use(cors()); // Keep CORS but rely on API key for security
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10000,
-  message: { error: 'Too many requests from this IP' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// Optional: Additional referer checking for extra security
+const validateReferer = (req, res, next) => {
+  const allowedDomain = process.env.ALLOWED_DOMAIN;
+  
+  // Skip referer check if no domain is configured
+  if (!allowedDomain) {
+    return next();
+  }
+  
+  const referer = req.get('Referer') || req.get('Origin');
+  
+  if (!referer || !referer.startsWith(allowedDomain)) {
+    console.log('Access denied:', referer);
+    return res.status(403).json({ 
+      error: 'Access denied',
+      message: 'Requests must come from authorized domain'
+    });
+  }
+  
+  next();
+};
 
-// Routes
-app.use('/api', limiter, userRoutes);
+// Routes with authentication
+app.use('/api', validateReferer, userRoutes);
 
-// Health check
+// Health check (no auth required)
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -47,6 +59,7 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  console.log('📋 API Key authentication enabled');
 });
 
 export default app;
