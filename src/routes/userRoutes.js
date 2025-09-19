@@ -55,7 +55,7 @@ router.get('/user/:userKey', async (req, res) => {
 
 router.post('/user/check-key', async (req, res) => {
     try {
-        const { userKey, returnApiKey = false, incrementCalls = false } = req.body;
+        const { userKey, returnApiKey = false, incrementCalls = true } = req.body;
 
         if (!userKey) {
             return res.status(400).json({ error: 'User key is required' });
