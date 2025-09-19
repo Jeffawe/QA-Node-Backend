@@ -55,7 +55,7 @@ router.get('/user/:userKey', async (req, res) => {
 
 router.post('/user/check-key', async (req, res) => {
     try {
-        const { userKey, returnApiKey = false } = req.body;
+        const { userKey, returnApiKey = false, incrementCalls = false } = req.body;
 
         if (!userKey) {
             return res.status(400).json({ error: 'User key is required' });
@@ -70,7 +70,7 @@ router.post('/user/check-key', async (req, res) => {
         // Fetch user from Supabase
         const { data: user, error } = await supabase
             .from('test_users')
-            .select('user_key, gemini_api_key')
+            .select('user_key, gemini_api_key, calls_made, max_calls')
             .eq('user_key', userKey)
             .single();
 
@@ -94,7 +94,49 @@ router.post('/user/check-key', async (req, res) => {
 
         console.log('User found:', user);
 
-        // Return response based on returnApiKey boolean
+        // Check call limits if incrementCalls is true
+        if (incrementCalls) {
+            const currentCalls = user.calls_made || 0;
+            const maxCalls = user.max_calls || MAX_API_CALLS;
+            
+            // Check if user has exceeded call limit
+            if (currentCalls >= maxCalls) {
+                return res.status(429).json({
+                    error: 'API call limit exceeded',
+                    exists: true,
+                    callsMade: currentCalls,
+                    maxCalls: maxCalls,
+                    callsRemaining: 0,
+                    canMakeCall: false
+                });
+            }
+
+            // Increment calls_made by 1
+            const { error: updateError } = await supabase
+                .from('test_users')
+                .update({ calls_made: currentCalls + 1 })
+                .eq('user_key', userKey);
+
+            if (updateError) {
+                console.error('Error updating call count:', updateError);
+                return res.status(500).json({ error: 'Failed to update call count' });
+            }
+
+            // Return response with updated call information
+            const updatedCallsMade = currentCalls + 1;
+            const callsRemaining = maxCalls - updatedCallsMade;
+
+            return res.json({
+                exists: true,
+                callsMade: updatedCallsMade,
+                maxCalls: maxCalls,
+                callsRemaining: callsRemaining,
+                canMakeCall: callsRemaining > 0,
+                ...(returnApiKey && { apiKey: null })
+            });
+        }
+
+        // Return response based on returnApiKey boolean (original behavior)
         if (returnApiKey) {
             res.json({
                 exists: true,
