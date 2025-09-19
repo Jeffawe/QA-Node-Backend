@@ -34,15 +34,26 @@ const validateClientDomain = (req, res, next) => {
 
 const allowedIPs = [
     '67.243.206.244',
-    '54.191.253.12'
+    '54.191.253.12',
+    '127.0.0.1',        // IPv4 localhost
+    '::1'               // IPv6 localhost
 ];
 
 app.use((req, res, next) => {
-    const clientIP = req.ip || req.connection.remoteAddress;
+    let clientIP = req.ip || req.connection.remoteAddress;
+    
+    // Convert IPv6-mapped IPv4 back to IPv4
+    if (clientIP && clientIP.startsWith('::ffff:')) {
+        clientIP = clientIP.substring(7);
+    }
+    
+    console.log(`Checking ClientIP: ${clientIP}`);
+    
     if (!allowedIPs.includes(clientIP)) {
-        console.log(`The ClientIP ${clientIP} is not allowed`)
+        console.log(`The ClientIP ${clientIP} is not allowed`);
         return res.status(403).send('Forbidden');
     }
+    
     next();
 });
 
