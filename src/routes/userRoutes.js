@@ -98,7 +98,7 @@ router.post('/user/check-key', async (req, res) => {
         if (returnApiKey) {
             res.json({
                 exists: true,
-                apiKey: user.gemini_api_key || null
+                apiKey: null
             });
         } else {
             res.json({ exists: true });

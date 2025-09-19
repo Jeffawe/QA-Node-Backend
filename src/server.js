@@ -14,7 +14,7 @@ app.use(cors()); // Keep CORS but rely on API key for security
 
 const validateClientDomain = (req, res, next) => {
     const allowedDomains = process.env.NODE_ENV === 'production'
-        ? ['qa-client']
+        ? ['qa-jeffery-client']
         : true;
 
     const clientDomain = req.get('X-Client-Domain');
@@ -31,6 +31,19 @@ const validateClientDomain = (req, res, next) => {
     console.log('✅ Access granted to:', clientDomain);
     next();
 };
+
+const allowedIPs = [
+    '67.243.206.244',
+    '54.191.253.12'
+];
+
+app.use((req, res, next) => {
+    const clientIP = req.ip || req.connection.remoteAddress;
+    if (!allowedIPs.includes(clientIP)) {
+        return res.status(403).send('Forbidden');
+    }
+    next();
+});
 
 // Routes with authentication
 app.use('/api', validateClientDomain, userRoutes);
