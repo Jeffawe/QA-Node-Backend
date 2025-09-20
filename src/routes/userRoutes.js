@@ -96,6 +96,7 @@ router.post('/user/check-key', async (req, res) => {
 
         // Check call limits if incrementCalls is true
         if (incrementCalls) {
+            console.log("Adding a new call");
             const currentCalls = user.calls_made || 0;
             const maxCalls = user.max_calls || MAX_API_CALLS;
             
